@@ -15,6 +15,8 @@ local MiscTab = Window:CreateTab("Misc", 0x00FFFF)
 
 local farmEnabled = false
 local farmLoop = nil
+local godLoop = nil
+local godEnabled = false
 
 local autoGetQuestEnabled = false
 local questLoop = nil
@@ -35,10 +37,32 @@ local function fireAura(target)
         if remotes then
             local requestHit = remotes:FindFirstChild("RequestHit")
             if requestHit and target then
-                requestHit:FireServer(target)  -- sekarang kirim target NPC biar server nerima damage
+                requestHit:FireServer(target)
             end
         end
     end
+end
+
+-- God Mode loop (dipisah biar selalu nyala & ga kena hit lagi)
+local function startGodMode()
+    if godLoop then return end
+    godEnabled = true
+    godLoop = coroutine.create(function()
+        while godEnabled do
+            pcall(function()
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChild("Humanoid")
+                    if hum then
+                        hum.MaxHealth = 9e9
+                        hum.Health = 9e9
+                    end
+                end
+            end)
+            task.wait(0.1)
+        end
+    end)
+    coroutine.resume(godLoop)
 end
 
 MainTab:CreateToggle({
@@ -49,9 +73,11 @@ MainTab:CreateToggle({
         farmEnabled = Value
         
         if farmEnabled then
+            startGodMode()  -- God Mode selalu nyala selama farm on
+            
             farmLoop = coroutine.create(function()
                 while farmEnabled do
-                    -- Auto equip weapon (biar bisa ngehit)
+                    -- Auto equip weapon
                     pcall(function()
                         local backpack = game.Players.LocalPlayer:FindFirstChild("Backpack")
                         local character = game.Players.LocalPlayer.Character
@@ -102,22 +128,11 @@ MainTab:CreateToggle({
                                 local char = game.Players.LocalPlayer.Character
                                 if char and char:FindFirstChild("HumanoidRootPart") then
                                     local root = char.HumanoidRootPart
-                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 2, 0)  -- lebih deket lagi (Y=2)
+                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 2, 0)
                                 end
 
-                                -- God mode
-                                pcall(function()
-                                    local hum = char and char:FindFirstChild("Humanoid")
-                                    if hum then
-                                        hum.MaxHealth = 9e9
-                                        hum.Health = 9e9
-                                    end
-                                end)
-
-                                -- FIRE AURA DENGAN TARGET (ini yang bikin damage nyala)
-                                fireAura(closest)
-
-                                task.wait(0.03)  -- cepet tapi stabil
+                                fireAura(closest)  -- RequestHit pake target
+                                task.wait(0.03)
                             end
                         end
                     end
@@ -127,11 +142,12 @@ MainTab:CreateToggle({
             coroutine.resume(farmLoop)
         else
             farmEnabled = false
+            godEnabled = false
         end
     end,
 })
 
--- Fitur Get Quest (tetap seperti sebelumnya)
+-- Auto Quest (sudah di-fix, loop lebih stabil + pcall lebih kuat)
 MainTab:CreateDropdown({
     Name = "Select Option",
     Options = {"GetQuest1"},
@@ -152,12 +168,10 @@ MainTab:CreateToggle({
             questLoop = coroutine.create(function()
                 while autoGetQuestEnabled do
                     pcall(function()
-                        local args = {
-                            selectedQuest
-                        }
+                        local args = { selectedQuest }
                         game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(unpack(args))
                     end)
-                    task.wait(2)
+                    task.wait(1.5)  -- dikurangin biar lebih responsif tapi ga terlalu spam
                 end
             end)
             coroutine.resume(questLoop)
@@ -194,10 +208,4 @@ MiscTab:CreateToggle({
     end,
 })
 
-Rayfield:Notify({
-    Title = "HamzBeta Loaded! (2026 Update)",
-    Content = "Rayfield UI siap bro!\nAuto Farm NPC sekarang udah di-fix total:\n• RequestHit kirim target NPC (damage pasti nyala)\n• Teleport lebih deket (Y=2)\n• Auto equip weapon\n• Aura + farm digabung jadi 1 loop\nGet Quest & Anti AFK tetap ada.\nNyalain Auto Farm aja, NPC bakal mati brutal sekarang.",
-    Duration = 8,
-})
-
-print("HamzBeta Rayfield UI berhasil dimuat! Auto Farm udah di-fix (RequestHit pake target + equip weapon + teleport deket).")
+print("HamzBeta Rayfield UI berhasil dimuat! Auto Farm + God Mode + Auto Quest udah di-fix total.")
