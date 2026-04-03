@@ -22,6 +22,8 @@ local autoGetQuestEnabled = false
 local questLoop = nil
 local selectedQuest = "GetQuest1"
 
+local flyPosition = "Above"  -- default terbang di atas (paling aman ga kena hit)
+
 local function getMyLevel()
     local leaderstats = game.Players.LocalPlayer:WaitForChild("leaderstats", 5)
     if leaderstats and leaderstats:FindFirstChild("Level") then
@@ -43,7 +45,6 @@ local function fireAura(target)
     end
 end
 
--- God Mode loop (dipisah biar selalu nyala & ga kena hit lagi)
 local function startGodMode()
     if godLoop then return end
     godEnabled = true
@@ -73,11 +74,10 @@ MainTab:CreateToggle({
         farmEnabled = Value
         
         if farmEnabled then
-            startGodMode()  -- God Mode selalu nyala selama farm on
+            startGodMode()
             
             farmLoop = coroutine.create(function()
                 while farmEnabled do
-                    -- Auto equip weapon
                     pcall(function()
                         local backpack = game.Players.LocalPlayer:FindFirstChild("Backpack")
                         local character = game.Players.LocalPlayer.Character
@@ -128,10 +128,12 @@ MainTab:CreateToggle({
                                 local char = game.Players.LocalPlayer.Character
                                 if char and char:FindFirstChild("HumanoidRootPart") then
                                     local root = char.HumanoidRootPart
-                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 2, 0)
+                                    
+                                    local offsetY = (flyPosition == "Above") and 20 or 3  -- 20 = tinggi banget (terbang di atas), 3 = deket bawah
+                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, offsetY, 0)
                                 end
 
-                                fireAura(closest)  -- RequestHit pake target
+                                fireAura(closest)
                                 task.wait(0.03)
                             end
                         end
@@ -147,7 +149,17 @@ MainTab:CreateToggle({
     end,
 })
 
--- Auto Quest (sudah di-fix, loop lebih stabil + pcall lebih kuat)
+-- Pilihan terbang di atas / di bawah
+MainTab:CreateDropdown({
+    Name = "Fly Position",
+    Options = {"Above", "Below"},
+    CurrentOption = {"Above"},
+    Flag = "FlyPosition",
+    Callback = function(Value)
+        flyPosition = Value[1]
+    end,
+})
+
 MainTab:CreateDropdown({
     Name = "Select Option",
     Options = {"GetQuest1"},
@@ -171,7 +183,7 @@ MainTab:CreateToggle({
                         local args = { selectedQuest }
                         game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(unpack(args))
                     end)
-                    task.wait(1.5)  -- dikurangin biar lebih responsif tapi ga terlalu spam
+                    task.wait(1.5)
                 end
             end)
             coroutine.resume(questLoop)
@@ -208,4 +220,4 @@ MiscTab:CreateToggle({
     end,
 })
 
-print("HamzBeta Rayfield UI berhasil dimuat! Auto Farm + God Mode + Auto Quest udah di-fix total.")
+print("HamzBeta Rayfield UI berhasil dimuat! Auto Farm udah di-fix tinggi terbang + pilihan Above/Below.")
