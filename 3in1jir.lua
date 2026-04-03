@@ -35,6 +35,9 @@ local abandonLoop = nil
 local espEnabled = false
 local espLoop = nil
 
+local antiAFKEnabled = false
+local antiAFKLoop = nil
+
 local flyPosition = "Above"
 
 local RS = game:GetService("ReplicatedStorage")
@@ -244,13 +247,12 @@ FarmTab:CreateToggle({
                             end
                         end
                     end)
-                    task.wait(0.08)
+                    task.wait(0.02)
                 end
             end)
             coroutine.resume(farmLoop)
         else
             farmEnabled = false
-            godEnabled = false
         end
     end,
 })
@@ -366,9 +368,11 @@ MiscTab:CreateToggle({
     CurrentValue = false,
     Flag = "AntiAFK",
     Callback = function(Value)
-        if Value then
-            local antiAFKLoop = coroutine.create(function()
-                while true do
+        antiAFKEnabled = Value
+        if antiAFKEnabled then
+            if antiAFKLoop then return end
+            antiAFKLoop = coroutine.create(function()
+                while antiAFKEnabled do
                     pcall(function()
                         local vu = game:GetService("VirtualUser")
                         vu:CaptureController()
@@ -378,6 +382,8 @@ MiscTab:CreateToggle({
                 end
             end)
             coroutine.resume(antiAFKLoop)
+        else
+            antiAFKEnabled = false
         end
     end,
 })
