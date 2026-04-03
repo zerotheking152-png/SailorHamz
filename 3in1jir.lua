@@ -1,9 +1,12 @@
--- ✅ HamzBeta by Grok - Rayfield UI TERBARU (2026)
--- Loading screen + Tab "Main" + Aura Kill + Auto Farm NPC (sesuai level)
+-- ✅ HamzBeta by Grok - Rayfield UI TERBARU & STABIL (FIXED 2026)
+-- Pakai link GitHub resmi (shlexware) biar ga down lagi
+-- + Debug print + Loading screen persis sesuai request lu
 
-print("🚀 HamzBeta mulai loading Rayfield UI...")
+print("🚀 HamzBeta mulai loading Rayfield UI... (debug 1)")
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+
+print("✅ Rayfield berhasil di-load! (debug 2)")
 
 local Window = Rayfield:CreateWindow({
     Name = "HamzBeta",
@@ -17,10 +20,12 @@ local Window = Rayfield:CreateWindow({
     },
 })
 
+print("✅ Window Rayfield dibuat! (debug 3)")
+
 local MainTab = Window:CreateTab("Main", 0x00FF64) -- Warna hijau neon
 
 -- =============================================
--- VARIABEL & FUNGSI (sama seperti sebelumnya)
+-- VARIABEL & FUNGSI
 -- =============================================
 local enabled = false
 local auraLoop = nil
@@ -59,7 +64,7 @@ MainTab:CreateToggle({
                             end
                         end
                     end
-                    task.wait(0.01) -- SUPER CEPET
+                    task.wait(0.01)
                 end
             end)
             coroutine.resume(auraLoop)
@@ -70,7 +75,7 @@ MainTab:CreateToggle({
 })
 
 -- =============================================
--- AUTO FARM NPC TOGGLE (hanya NPC yang bisa di-hit + sesuai level)
+-- AUTO FARM NPC TOGGLE (hanya NPCs folder + level filter)
 -- =============================================
 MainTab:CreateToggle({
     Name = "🌾 Auto Farm NPC",
@@ -85,7 +90,6 @@ MainTab:CreateToggle({
                     local myLevel = getMyLevel()
                     local npcs = {}
                     
-                    -- Hanya ambil dari folder NPCs (yang bener-bener mob)
                     local npcFolder = workspace:FindFirstChild("NPCs")
                     if npcFolder then
                         for _, obj in ipairs(npcFolder:GetChildren()) do
@@ -94,10 +98,8 @@ MainTab:CreateToggle({
                                 and obj.Humanoid.Health > 0 
                                 and obj:FindFirstChild("HumanoidRootPart") then
                                 
-                                -- Filter level (max +15 di atas level lu)
                                 local npcLevel = 1
-                                local levelVal = obj:FindFirstChild("Level") 
-                                               or (obj.Humanoid:FindFirstChild("Level"))
+                                local levelVal = obj:FindFirstChild("Level") or (obj.Humanoid:FindFirstChild("Level"))
                                 if levelVal and (levelVal:IsA("IntValue") or levelVal:IsA("NumberValue")) then
                                     npcLevel = levelVal.Value
                                 end
@@ -110,11 +112,9 @@ MainTab:CreateToggle({
                     end
                     
                     if #npcs > 0 then
-                        -- Cari NPC terdekat
                         local closest = nil
                         local minDist = math.huge
-                        local myRoot = game.Players.LocalPlayer.Character 
-                                      and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        local myRoot = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         
                         if myRoot then
                             for _, npc in ipairs(npcs) do
@@ -128,7 +128,6 @@ MainTab:CreateToggle({
                             closest = npcs[1]
                         end
                         
-                        -- Farm sampai mati
                         if closest then
                             while closest.Humanoid.Health > 0 and farmEnabled do
                                 local char = game.Players.LocalPlayer.Character
@@ -141,22 +140,22 @@ MainTab:CreateToggle({
                         end
                     end
                     
-                    task.wait(0.5) -- refresh setiap 0.5 detik
+                    task.wait(0.5)
                 end
             end)
             coroutine.resume(farmLoop)
-            
         else
             farmEnabled = false
         end
     end,
 })
 
--- Notification akhir
+-- Notification
 Rayfield:Notify({
     Title = "✅ HamzBeta Loaded!",
-    Content = "Rayfield UI siap! Nyalain Aura Kill dulu baru Auto Farm NPC biar jalan bareng.",
+    Content = "Rayfield UI siap bro! Cek tab Main → nyalain Aura Kill dulu baru Auto Farm NPC.",
     Duration = 6,
 })
 
-print("✅ HamzBeta Rayfield UI berhasil dimuat! Loading screen + Tab Main udah ada.")
+print("✅ HamzBeta Rayfield UI FULLY LOADED! (debug 4)")
+print("   → Buka GUI dengan tombol RightShift kalau ga langsung keliatan")
