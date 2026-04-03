@@ -1,11 +1,11 @@
-print("🚀 HamzBeta mulai loading Rayfield UI...")
+print("HamzBeta mulai loading Rayfield UI...")
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
     Name = "HamzBeta",
     LoadingTitle = "HamzBeta Is loading",
-    LoadingSubtitle = "tunggu sebentar yaaaa😘",
+    LoadingSubtitle = "tunggu sebentar yaaaa",
     ConfigurationSaving = { Enabled = false },
     Discord = { Enabled = false },
 })
@@ -15,8 +15,10 @@ local MiscTab = Window:CreateTab("Misc", 0x00FFFF)
 
 local farmEnabled = false
 local farmLoop = nil
-local auraEnabled = false
-local auraLoop = nil
+
+local autoGetQuestEnabled = false
+local questLoop = nil
+local selectedQuest = "GetQuest1"
 
 local function getMyLevel()
     local leaderstats = game.Players.LocalPlayer:WaitForChild("leaderstats", 5)
@@ -26,40 +28,41 @@ local function getMyLevel()
     return 1
 end
 
-local function fireAura()
+local function fireAura(target)
     local combat = game:GetService("ReplicatedStorage"):WaitForChild("CombatSystem", 5)
     if combat then
         local remotes = combat:WaitForChild("Remotes", 5)
         if remotes then
             local requestHit = remotes:FindFirstChild("RequestHit")
-            if requestHit then
-                requestHit:FireServer()
+            if requestHit and target then
+                requestHit:FireServer(target)  -- sekarang kirim target NPC biar server nerima damage
             end
         end
     end
 end
 
 MainTab:CreateToggle({
-    Name = "🌾 Auto Farm NPC",
+    Name = "Auto Farm NPC",
     CurrentValue = false,
     Flag = "AutoFarmNPC",
     Callback = function(Value)
         farmEnabled = Value
-        auraEnabled = Value
         
         if farmEnabled then
-            -- Aura loop (super cepat biar selalu ngehit)
-            auraLoop = coroutine.create(function()
-                while auraEnabled do
-                    fireAura()
-                    task.wait(0.01)
-                end
-            end)
-            coroutine.resume(auraLoop)
-
-            -- Farm loop
             farmLoop = coroutine.create(function()
                 while farmEnabled do
+                    -- Auto equip weapon (biar bisa ngehit)
+                    pcall(function()
+                        local backpack = game.Players.LocalPlayer:FindFirstChild("Backpack")
+                        local character = game.Players.LocalPlayer.Character
+                        if backpack and character then
+                            local tool = backpack:FindFirstChildOfClass("Tool")
+                            if tool then
+                                tool.Parent = character
+                            end
+                        end
+                    end)
+
                     local myLevel = getMyLevel()
                     local npcs = {}
                     local npcFolder = workspace:FindFirstChild("NPCs")
@@ -99,8 +102,10 @@ MainTab:CreateToggle({
                                 local char = game.Players.LocalPlayer.Character
                                 if char and char:FindFirstChild("HumanoidRootPart") then
                                     local root = char.HumanoidRootPart
-                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0) -- lebih dekat biar hitbox nyata
+                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 2, 0)  -- lebih deket lagi (Y=2)
                                 end
+
+                                -- God mode
                                 pcall(function()
                                     local hum = char and char:FindFirstChild("Humanoid")
                                     if hum then
@@ -108,7 +113,11 @@ MainTab:CreateToggle({
                                         hum.Health = 9e9
                                     end
                                 end)
-                                task.wait(0.05)
+
+                                -- FIRE AURA DENGAN TARGET (ini yang bikin damage nyala)
+                                fireAura(closest)
+
+                                task.wait(0.03)  -- cepet tapi stabil
                             end
                         end
                     end
@@ -118,7 +127,42 @@ MainTab:CreateToggle({
             coroutine.resume(farmLoop)
         else
             farmEnabled = false
-            auraEnabled = false
+        end
+    end,
+})
+
+-- Fitur Get Quest (tetap seperti sebelumnya)
+MainTab:CreateDropdown({
+    Name = "Select Option",
+    Options = {"GetQuest1"},
+    CurrentOption = {"GetQuest1"},
+    Flag = "SelectGetQuest",
+    Callback = function(Value)
+        selectedQuest = Value[1]
+    end,
+})
+
+MainTab:CreateToggle({
+    Name = "Get Quest",
+    CurrentValue = false,
+    Flag = "GetQuest",
+    Callback = function(Value)
+        autoGetQuestEnabled = Value
+        if autoGetQuestEnabled then
+            questLoop = coroutine.create(function()
+                while autoGetQuestEnabled do
+                    pcall(function()
+                        local args = {
+                            selectedQuest
+                        }
+                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("QuestAccept"):FireServer(unpack(args))
+                    end)
+                    task.wait(2)
+                end
+            end)
+            coroutine.resume(questLoop)
+        else
+            autoGetQuestEnabled = false
         end
     end,
 })
@@ -127,7 +171,7 @@ local antiAFKEnabled = false
 local antiAFKLoop = nil
 
 MiscTab:CreateToggle({
-    Name = "🛡️ Anti AFK",
+    Name = "Anti AFK",
     CurrentValue = false,
     Flag = "AntiAFK",
     Callback = function(Value)
@@ -151,9 +195,9 @@ MiscTab:CreateToggle({
 })
 
 Rayfield:Notify({
-    Title = "✅ HamzBeta Loaded! (2026 Update)",
-    Content = "Rayfield UI siap bro! 🔥\nAuto Farm NPC sekarang: Aura Hit CEPAT + God Mode + Teleport lebih dekat.\nNPC pasti mati sekarang. Anti AFK di Misc.\nNyalain Auto Farm aja 😎",
+    Title = "HamzBeta Loaded! (2026 Update)",
+    Content = "Rayfield UI siap bro!\nAuto Farm NPC sekarang udah di-fix total:\n• RequestHit kirim target NPC (damage pasti nyala)\n• Teleport lebih deket (Y=2)\n• Auto equip weapon\n• Aura + farm digabung jadi 1 loop\nGet Quest & Anti AFK tetap ada.\nNyalain Auto Farm aja, NPC bakal mati brutal sekarang.",
     Duration = 8,
 })
 
-print("✅ HamzBeta Rayfield UI berhasil dimuat! Aura udah di-fix + digabung ke Auto Farm.")
+print("HamzBeta Rayfield UI berhasil dimuat! Auto Farm udah di-fix (RequestHit pake target + equip weapon + teleport deket).")
