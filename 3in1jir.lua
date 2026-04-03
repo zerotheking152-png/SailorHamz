@@ -3,21 +3,19 @@ print("HamzBeta mulai loading Rayfield UI...")
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "HamzBeta v2 - Fixed & Rapi",
+    Name = "HamzBetaTeater",
     LoadingTitle = "HamzBeta Is loading",
     LoadingSubtitle = "tunggu sebentar yaaaa",
     ConfigurationSaving = { Enabled = false },
     Discord = { Enabled = false },
 })
 
--- ==================== TABS BARU (biar rapi banget) ====================
-local FarmTab    = Window:CreateTab("Farm", 0x00FF64)
-local CombatTab  = Window:CreateTab("Combat", 0xFF0000)
-local QuestTab   = Window:CreateTab("Quest", 0xFFFF00)
-local VisualTab  = Window:CreateTab("Visual", 0x00FFFF)
-local MiscTab    = Window:CreateTab("Misc", 0xFFFFFF)
+local FarmTab = Window:CreateTab("Farm", 0x00FF64)
+local CombatTab = Window:CreateTab("Combat", 0xFF0000)
+local QuestTab = Window:CreateTab("Quest", 0xFFFF00)
+local VisualTab = Window:CreateTab("Visual", 0x00FFFF)
+local MiscTab = Window:CreateTab("Misc", 0xFFFFFF)
 
--- ==================== VARIABEL ====================
 local farmEnabled = false
 local farmLoop = nil
 local godEnabled = false
@@ -43,8 +41,10 @@ local RS = game:GetService("ReplicatedStorage")
 local QuestAccept = RS:WaitForChild("RemoteEvents"):WaitForChild("QuestAccept")
 local QuestAbandon = RS:WaitForChild("RemoteEvents"):WaitForChild("QuestAbandon")
 
+local player = game.Players.LocalPlayer
+
 local function getMyLevel()
-    local leaderstats = game.Players.LocalPlayer:WaitForChild("leaderstats", 5)
+    local leaderstats = player:WaitForChild("leaderstats", 5)
     if leaderstats and leaderstats:FindFirstChild("Level") then
         return leaderstats.Level.Value
     end
@@ -70,7 +70,7 @@ local function startGodMode()
     godLoop = coroutine.create(function()
         while godEnabled do
             pcall(function()
-                local char = game.Players.LocalPlayer.Character
+                local char = player.Character
                 if char then
                     local hum = char:FindFirstChild("Humanoid")
                     if hum then
@@ -85,16 +85,23 @@ local function startGodMode()
     coroutine.resume(godLoop)
 end
 
--- ==================== KILL AURA (fix hit) ====================
+player.CharacterAdded:Connect(function(char)
+    if godEnabled then
+        task.wait(1)
+        local hum = char:WaitForChild("Humanoid")
+        hum.MaxHealth = 9e9
+        hum.Health = 9e9
+    end
+end)
+
 local function startKillAura()
     if auraLoop then return end
     auraLoop = coroutine.create(function()
         while killAuraEnabled do
             pcall(function()
-                local char = game.Players.LocalPlayer.Character
+                local char = player.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
                 if not myRoot then return end
-
                 local npcFolder = workspace:FindFirstChild("NPCs")
                 if npcFolder then
                     for _, npc in ipairs(npcFolder:GetChildren()) do
@@ -110,13 +117,12 @@ local function startKillAura()
                     end
                 end
             end)
-            task.wait(0.03) -- lebih cepat biar ngehit pasti
+            task.wait(0.03)
         end
     end)
     coroutine.resume(auraLoop)
 end
 
--- ==================== AUTO ABANDON ====================
 local function startAutoAbandon()
     if abandonLoop then return end
     abandonLoop = coroutine.create(function()
@@ -130,15 +136,13 @@ local function startAutoAbandon()
     coroutine.resume(abandonLoop)
 end
 
--- ==================== ESP ====================
 local function cleanupESP()
     pcall(function()
         local npcFolder = workspace:FindFirstChild("NPCs")
         if npcFolder then
             for _, npc in ipairs(npcFolder:GetChildren()) do
-                if npc:FindFirstChild("ESP") then
-                    npc.ESP:Destroy()
-                end
+                local esp = npc:FindFirstChild("ESP")
+                if esp then esp:Destroy() end
             end
         end
     end)
@@ -151,15 +155,12 @@ local function startESP()
             pcall(function()
                 local npcFolder = workspace:FindFirstChild("NPCs")
                 if not npcFolder then return end
-
-                local myRoot = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                 local myPos = myRoot and myRoot.Position or Vector3.new()
-
                 for _, npc in ipairs(npcFolder:GetChildren()) do
                     if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") then
                         local root = npc.HumanoidRootPart
                         local hum = npc.Humanoid
-
                         if not npc:FindFirstChild("ESP") then
                             local billboard = Instance.new("BillboardGui")
                             billboard.Name = "ESP"
@@ -168,8 +169,8 @@ local function startESP()
                             billboard.Size = UDim2.new(0, 200, 0, 70)
                             billboard.StudsOffset = Vector3.new(0, 5, 0)
                             billboard.Parent = npc
-
                             local text = Instance.new("TextLabel")
+                            text.Name = "Text"
                             text.Size = UDim2.new(1, 0, 1, 0)
                             text.BackgroundTransparency = 1
                             text.TextStrokeTransparency = 0
@@ -181,24 +182,21 @@ local function startESP()
                             text.TextYAlignment = Enum.TextYAlignment.Center
                             text.Parent = billboard
                         end
-
                         local levelVal = npc:FindFirstChild("Level") or npc.Humanoid:FindFirstChild("Level")
                         local npcLevel = levelVal and levelVal.Value or 1
                         local dist = (myPos - root.Position).Magnitude
-
                         npc.ESP.Text.Text = string.format("%s\nLv.%d  |  HP: %.0f/%.0f\n%.0f stud", npc.Name, npcLevel, hum.Health, hum.MaxHealth, dist)
                     end
                 end
             end)
-            task.wait(0.3)
+            task.wait(0.2)
         end
     end)
     coroutine.resume(espLoop)
 end
 
--- ==================== FARM TAB ====================
 FarmTab:CreateToggle({
-    Name = "Auto Farm NPC (Teleport + God Mode)",
+    Name = "Auto Farm NPC",
     CurrentValue = false,
     Flag = "AutoFarmNPC",
     Callback = function(Value)
@@ -208,15 +206,12 @@ FarmTab:CreateToggle({
             farmLoop = coroutine.create(function()
                 while farmEnabled do
                     pcall(function()
-                        -- Equip tool otomatis
-                        local backpack = game.Players.LocalPlayer:FindFirstChild("Backpack")
-                        local character = game.Players.LocalPlayer.Character
+                        local backpack = player:FindFirstChild("Backpack")
+                        local character = player.Character
                         if backpack and character then
                             local tool = backpack:FindFirstChildOfClass("Tool")
                             if tool then tool.Parent = character end
                         end
-
-                        -- Cari NPC terdekat
                         local myLevel = getMyLevel()
                         local npcs = {}
                         local npcFolder = workspace:FindFirstChild("NPCs")
@@ -232,7 +227,6 @@ FarmTab:CreateToggle({
                                 end
                             end
                         end
-
                         if #npcs > 0 then
                             local closest = npcs[1]
                             local minDist = math.huge
@@ -240,18 +234,17 @@ FarmTab:CreateToggle({
                             if myRoot then
                                 for _, npc in ipairs(npcs) do
                                     local d = (myRoot.Position - npc.HumanoidRootPart.Position).Magnitude
-                                    if d < minDist then minDist = d; closest = npc end
+                                    if d < minDist then minDist = d closest = npc end
                                 end
                             end
-
-                            -- Teleport ke NPC (tetap pake offset)
                             if closest and character and character:FindFirstChild("HumanoidRootPart") then
                                 local offsetY = (flyPosition == "Above") and 20 or 3
                                 character.HumanoidRootPart.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, offsetY, 0)
+                                fireAura(closest)
                             end
                         end
                     end)
-                    task.wait(0.1)
+                    task.wait(0.08)
                 end
             end)
             coroutine.resume(farmLoop)
@@ -272,23 +265,18 @@ FarmTab:CreateDropdown({
     end,
 })
 
--- ==================== COMBAT TAB ====================
 CombatTab:CreateToggle({
-    Name = "Kill Aura (Radius)",
+    Name = "Kill Aura Radius",
     CurrentValue = false,
     Flag = "KillAura",
     Callback = function(Value)
         killAuraEnabled = Value
-        if killAuraEnabled then
-            startKillAura()
-        else
-            killAuraEnabled = false
-        end
+        if killAuraEnabled then startKillAura() else killAuraEnabled = false end
     end,
 })
 
 CombatTab:CreateSlider({
-    Name = "Kill Aura Radius (stud)",
+    Name = "Kill Aura Radius",
     Range = {10, 100},
     Increment = 5,
     CurrentValue = 50,
@@ -299,20 +287,15 @@ CombatTab:CreateSlider({
 })
 
 CombatTab:CreateToggle({
-    Name = "God Mode (Manual)",
+    Name = "God Mode",
     CurrentValue = false,
-    Flag = "GodModeManual",
+    Flag = "GodMode",
     Callback = function(Value)
         godEnabled = Value
-        if godEnabled then
-            startGodMode()
-        else
-            godEnabled = false
-        end
+        if godEnabled then startGodMode() else godEnabled = false end
     end,
 })
 
--- ==================== QUEST TAB ====================
 QuestTab:CreateDropdown({
     Name = "Select Quest NPC",
     Options = {"QuestNPC1", "QuestNPC2", "QuestNPC3", "QuestNPC4", "QuestNPC5"},
@@ -324,24 +307,24 @@ QuestTab:CreateDropdown({
 })
 
 QuestTab:CreateToggle({
-    Name = "Auto Get Quest (Accept Only)",
+    Name = "Auto Get Quest",
     CurrentValue = false,
     Flag = "GetQuest",
     Callback = function(Value)
         autoGetQuestEnabled = Value
         if autoGetQuestEnabled then
-            -- Hanya accept sekali + re-accept kalau mati
             pcall(function()
                 RS:WaitForChild("Remotes"):WaitForChild("GetTitlesData"):InvokeServer()
                 RS:WaitForChild("Remotes"):WaitForChild("ShopRemotes"):WaitForChild("GetBoosts"):InvokeServer()
             end)
-
             questLoop = coroutine.create(function()
                 while autoGetQuestEnabled do
                     pcall(function()
+                        QuestAbandon:FireServer()
+                        task.wait(1)
                         QuestAccept:FireServer(selectedQuest)
                     end)
-                    task.wait(25) -- delay panjang biar quest sempat selesai dulu
+                    task.wait(30)
                 end
             end)
             coroutine.resume(questLoop)
@@ -357,51 +340,35 @@ QuestTab:CreateToggle({
     Flag = "AutoAbandon",
     Callback = function(Value)
         autoAbandonEnabled = Value
-        if autoAbandonEnabled then
-            startAutoAbandon()
-        else
-            autoAbandonEnabled = false
-        end
+        if autoAbandonEnabled then startAutoAbandon() else autoAbandonEnabled = false end
     end,
 })
 
 QuestTab:CreateButton({
-    Name = "Manual Abandon Quest (Sekali Klik)",
+    Name = "Manual Abandon Quest",
     Callback = function()
         pcall(function() QuestAbandon:FireServer() end)
-        Rayfield:Notify({Title = "HamzBeta", Content = "Quest sudah di-abandon!", Duration = 3})
     end,
 })
 
--- ==================== VISUAL TAB ====================
 VisualTab:CreateToggle({
-    Name = "ESP All NPCs (Nama + Lv + HP + Jarak)",
+    Name = "ESP All NPCs",
     CurrentValue = false,
     Flag = "ESPNPC",
     Callback = function(Value)
         espEnabled = Value
-        if espEnabled then
-            startESP()
-        else
-            cleanupESP()
-            espEnabled = false
-        end
+        if espEnabled then startESP() else cleanupESP() espEnabled = false end
     end,
 })
-
--- ==================== MISC TAB ====================
-local antiAFKEnabled = false
-local antiAFKLoop = nil
 
 MiscTab:CreateToggle({
     Name = "Anti AFK",
     CurrentValue = false,
     Flag = "AntiAFK",
     Callback = function(Value)
-        antiAFKEnabled = Value
-        if antiAFKEnabled then
-            antiAFKLoop = coroutine.create(function()
-                while antiAFKEnabled do
+        if Value then
+            local antiAFKLoop = coroutine.create(function()
+                while true do
                     pcall(function()
                         local vu = game:GetService("VirtualUser")
                         vu:CaptureController()
@@ -411,18 +378,6 @@ MiscTab:CreateToggle({
                 end
             end)
             coroutine.resume(antiAFKLoop)
-        else
-            antiAFKEnabled = false
         end
     end,
 })
-
-print("HamzBeta v2 FIXED & RAPI berhasil dimuat! ✅")
-print("Perubahan besar:")
-print("• 5 Tab baru biar super rapi")
-print("• Auto Farm sekarang cuma teleport + god + equip (Kill Aura yang ngehit)")
-print("• Kill Aura di Combat Tab → pasti ngehit (delay 0.03 + radius bebas)")
-print("• Auto Quest di-fix: sekarang hanya ACCEPT + delay 25 detik (ga abandon otomatis lagi)")
-print("• Auto Abandon dipisah biar lu bisa selesaiin quest dulu")
-print("Cara paling OP: Nyalain Auto Farm + Kill Aura + ESP + Auto Get Quest")
-print("Sekarang auto farm pasti ngehit, quest ga ngulang sebelum selesai 🔥")
