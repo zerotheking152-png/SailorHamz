@@ -15,6 +15,8 @@ local MiscTab = Window:CreateTab("Misc", 0x00FFFF)
 
 local farmEnabled = false
 local farmLoop = nil
+local auraEnabled = false
+local auraLoop = nil
 
 local function getMyLevel()
     local leaderstats = game.Players.LocalPlayer:WaitForChild("leaderstats", 5)
@@ -24,13 +26,38 @@ local function getMyLevel()
     return 1
 end
 
+local function fireAura()
+    local combat = game:GetService("ReplicatedStorage"):WaitForChild("CombatSystem", 5)
+    if combat then
+        local remotes = combat:WaitForChild("Remotes", 5)
+        if remotes then
+            local requestHit = remotes:FindFirstChild("RequestHit")
+            if requestHit then
+                requestHit:FireServer()
+            end
+        end
+    end
+end
+
 MainTab:CreateToggle({
     Name = "🌾 Auto Farm NPC",
     CurrentValue = false,
     Flag = "AutoFarmNPC",
     Callback = function(Value)
         farmEnabled = Value
+        auraEnabled = Value
+        
         if farmEnabled then
+            -- Aura loop (super cepat biar selalu ngehit)
+            auraLoop = coroutine.create(function()
+                while auraEnabled do
+                    fireAura()
+                    task.wait(0.01)
+                end
+            end)
+            coroutine.resume(auraLoop)
+
+            -- Farm loop
             farmLoop = coroutine.create(function()
                 while farmEnabled do
                     local myLevel = getMyLevel()
@@ -46,19 +73,6 @@ MainTab:CreateToggle({
                                 end
                                 if npcLevel <= myLevel + 15 then
                                     table.insert(npcs, obj)
-                                end
-                            end
-                        end
-                    end
-
-                    local function fireAura()
-                        local combat = game:GetService("ReplicatedStorage"):WaitForChild("CombatSystem", 5)
-                        if combat then
-                            local remotes = combat:WaitForChild("Remotes", 5)
-                            if remotes then
-                                local requestHit = remotes:FindFirstChild("RequestHit")
-                                if requestHit then
-                                    requestHit:FireServer()
                                 end
                             end
                         end
@@ -85,9 +99,8 @@ MainTab:CreateToggle({
                                 local char = game.Players.LocalPlayer.Character
                                 if char and char:FindFirstChild("HumanoidRootPart") then
                                     local root = char.HumanoidRootPart
-                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0)
+                                    root.CFrame = closest.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0) -- lebih dekat biar hitbox nyata
                                 end
-                                fireAura()
                                 pcall(function()
                                     local hum = char and char:FindFirstChild("Humanoid")
                                     if hum then
@@ -99,13 +112,13 @@ MainTab:CreateToggle({
                             end
                         end
                     end
-                    fireAura()
                     task.wait(0.5)
                 end
             end)
             coroutine.resume(farmLoop)
         else
             farmEnabled = false
+            auraEnabled = false
         end
     end,
 })
@@ -139,8 +152,8 @@ MiscTab:CreateToggle({
 
 Rayfield:Notify({
     Title = "✅ HamzBeta Loaded! (2026 Update)",
-    Content = "Rayfield UI siap bro! 🔥\nAuto Farm NPC sekarang otomatis: Aura Hit + God Mode.\nCek tab Misc buat Anti AFK.\nNyalain Auto Farm aja, sisanya jalan sendiri 😎",
+    Content = "Rayfield UI siap bro! 🔥\nAuto Farm NPC sekarang: Aura Hit CEPAT + God Mode + Teleport lebih dekat.\nNPC pasti mati sekarang. Anti AFK di Misc.\nNyalain Auto Farm aja 😎",
     Duration = 8,
 })
 
-print("✅ HamzBeta Rayfield UI berhasil dimuat! Aura + God Mode udah digabung ke Auto Farm + Anti AFK di Misc.")
+print("✅ HamzBeta Rayfield UI berhasil dimuat! Aura udah di-fix + digabung ke Auto Farm.")
